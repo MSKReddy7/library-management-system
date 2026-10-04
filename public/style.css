@@ -16,6 +16,21 @@
     --shadow: 0 18px 42px rgba(15, 23, 42, .08)
 }
 
+body.theme-dark {
+    --bg: #09111d;
+    --bg-strong: #0d172a;
+    --panel: #101d2d;
+    --panel-soft: #162334;
+    --text: #ebf3ff;
+    --muted: #9ca9bc;
+    --line: #1d2b3e;
+    --primary: #7c8cff;
+    --primary2: #6e7ef4;
+    --primary-soft: rgba(124, 140, 255, .18);
+    --sidebar: #070d18;
+    --shadow: 0 22px 48px rgba(2, 6, 23, .55)
+}
+
 * {
     box-sizing: border-box
 }
@@ -30,7 +45,113 @@ body {
     background: radial-gradient(circle at top left, #f4f8ff 0, #edf4ff 35%, #f7f9fc 100%);
     color: var(--text);
     display: flex;
-    min-height: 100vh
+    min-height: 100vh;
+    transition: background .25s ease, color .25s ease
+}
+
+body.theme-dark {
+    background: radial-gradient(circle at top left, #0a1320 0%, #0e1728 35%, #0a1018 100%)
+}
+
+body.theme-dark .panel,
+body.theme-dark .stat,
+body.theme-dark .search,
+body.theme-dark .modal-card,
+body.theme-dark .secondary,
+body.theme-dark .small-btn,
+body.theme-dark .field input,
+body.theme-dark .field select,
+body.theme-dark .field textarea {
+    background-color: var(--panel);
+    color: var(--text)
+}
+
+body.theme-dark .summary-badge,
+body.theme-dark .search,
+body.theme-dark .field input,
+body.theme-dark .field select,
+body.theme-dark .field textarea,
+body.theme-dark .secondary,
+body.theme-dark .small-btn,
+body.theme-dark .stat,
+body.theme-dark .panel,
+body.theme-dark .modal-card,
+body.theme-dark .panel-head,
+body.theme-dark .modal-head,
+body.theme-dark th,
+body.theme-dark td {
+    border-color: var(--line)
+}
+
+body.theme-dark .stat {
+    background: linear-gradient(180deg, #101b2d, #0d1728);
+    box-shadow: var(--shadow)
+}
+
+body.theme-dark .stat-icon {
+    background: rgba(124, 140, 255, .14)
+}
+
+body.theme-dark th {
+    background: rgba(18, 31, 47, .96)
+}
+
+body.theme-dark tbody tr:hover {
+    background: rgba(124, 140, 255, .08)
+}
+
+body.theme-dark .secondary {
+    color: var(--text);
+    background: var(--panel)
+}
+
+body.theme-dark .secondary:hover {
+    background: rgba(124, 140, 255, .08)
+}
+
+body.theme-dark .small-btn {
+    color: var(--text);
+    background: var(--panel)
+}
+
+body.theme-dark .search input,
+body.theme-dark .field label,
+body.theme-dark .field input,
+body.theme-dark .field select,
+body.theme-dark .field textarea,
+body.theme-dark .panel-head h2,
+body.theme-dark .topbar h1,
+body.theme-dark .topbar p,
+body.theme-dark .stat-label,
+body.theme-dark .stat-value,
+body.theme-dark .empty,
+body.theme-dark .hero-copy p,
+body.theme-dark .summary-badge span,
+body.theme-dark .summary-badge strong,
+body.theme-dark th,
+body.theme-dark td,
+body.theme-dark table {
+    color: var(--text)
+}
+
+body.theme-dark .summary-badge {
+    background: rgba(255, 255, 255, .04)
+}
+
+body.theme-dark .filter-btn {
+    background: rgba(15, 23, 42, .9);
+    border-color: var(--line);
+    color: var(--text)
+}
+
+body.theme-dark .field input::placeholder,
+body.theme-dark .search input::placeholder {
+    color: var(--muted)
+}
+
+body.theme-dark .toast {
+    background: #e2e8f0;
+    color: #0f172a
 }
 
 .sidebar {
@@ -136,6 +257,17 @@ body {
     gap: 12px
 }
 
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px
+}
+
+.theme-toggle {
+    min-width: 110px;
+    text-align: center
+}
+
 .topbar h1 {
     margin: 0;
     font-size: 28px
@@ -194,6 +326,46 @@ body {
     align-items: center
 }
 
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px
+}
+
+.toolbar-count {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap
+}
+
+.dashboard-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 18px;
+    padding: 0
+}
+
+.filter-btn {
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .6);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: .2s ease
+}
+
+.filter-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    box-shadow: 0 10px 20px rgba(91, 108, 255, .18)
+}
+
 .search {
     background: #fff;
     border: 1px solid var(--line);
@@ -223,6 +395,64 @@ body {
     margin-bottom: 26px
 }
 
+.insights-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 26px
+}
+
+.insight-card {
+    background: linear-gradient(180deg, var(--panel), var(--panel-soft));
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: var(--shadow)
+}
+
+.insight-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--muted)
+}
+
+.insight-top strong {
+    font-size: 22px;
+    color: var(--text)
+}
+
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(91, 108, 255, .12)
+}
+
+.progress-bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--primary), #7c3aed)
+}
+
+.progress-bar.warn span {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24)
+}
+
+.progress-bar.success span {
+    background: linear-gradient(90deg, #10b981, #34d399)
+}
+
+.insight-card small {
+    display: block;
+    margin-top: 12px;
+    color: var(--muted)
+}
+
 .stat {
     background: linear-gradient(180deg, #fff, #fbfcff);
     border: 1px solid var(--line);
@@ -230,7 +460,13 @@ body {
     padding: 18px 18px 16px;
     position: relative;
     overflow: hidden;
-    box-shadow: var(--shadow)
+    box-shadow: var(--shadow);
+    transition: transform .2s ease, box-shadow .2s ease
+}
+
+.stat:hover,
+.panel:hover {
+    transform: translateY(-2px)
 }
 
 .stat::before {
@@ -427,7 +663,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-    background: #f6f9ff
+    background: linear-gradient(90deg, rgba(91, 108, 255, .06), rgba(91, 108, 255, .02))
 }
 
 .badge {

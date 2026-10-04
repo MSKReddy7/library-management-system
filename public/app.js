@@ -2,6 +2,7 @@ const API = "/api";
 let lookups = {};
 let currentResource = null;
 let editingId = null;
+const bookRows = new Map();
 const resourceConfig = {
     publishers: { title: "Publishers", pk: "publisher_id", fields: [['publisher_name', 'Publisher Name', 'text'], ['email', 'Email', 'email'], ['phone', 'Phone', 'text'], ['address', 'Address', 'text']] },
     categories: { title: "Categories", pk: "category_id", fields: [['category_name', 'Category Name', 'text'], ['description', 'Description', 'textarea']] },
@@ -34,6 +35,74 @@ function showSection(name) {
 document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => showSection(b.dataset.section)));
 $('#mobileMenu').onclick = () => document.querySelector('.sidebar').classList.toggle('open');
 $('#refreshBtn').onclick = () => showSection(document.querySelector('.section.active').id);
+let activeDashboardFilter = 'ALL';
+
+function renderRecentLoans(rows) {
+    const filtered = activeDashboardFilter === 'ALL' ? rows : rows.filter(row => row.status === activeDashboardFilter || (activeDashboardFilter === 'ISSUED' && row.status === 'RETURNED' ? false : row.status === activeDashboardFilter));
+    $('#recentLoans').innerHTML = filtered.length ? filtered.map(r => `<tr><td>#${r.loan_id}</td><td>${esc(r.member_name)}</td><td>${esc(r.title)}</td><td>${esc(r.accession_no)}</td><td>${esc(r.due_date)}</td><td>${statusBadge(r.status)}</td></tr>`).join('') : '<tr><td colspan="6" class="empty">No loans found for this filter</td></tr>';
+}
+
+function bindDashboardFilters() {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            activeDashboardFilter = button.dataset.filter;
+            filterButtons.forEach(btn => btn.classList.toggle('active', btn === button));
+            const currentData = window.dashboardLoanRows || [];
+            renderRecentLoans(currentData);
+        });
+    });
+}
+
+function applyTheme(theme) {
+    const isDark = theme === 'dark';
+    document.body.classList.toggle('theme-dark', isDark);
+    const toggle = $('#themeToggle');
+    if (toggle) {
+        toggle.innerHTML = isDark ? '☀️ Light' : '🌙 Dark';
+        toggle.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+    }
+    localStorage.setItem('library-theme', theme);
+}
+
+$('#themeToggle')?.addEventListener('click', () => {
+    const nextTheme = document.body.classList.contains('theme-dark') ? 'light' : 'dark';
+    applyTheme(nextTheme);
+});
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('library-theme') || 'light';
+    applyTheme(savedTheme);
+}
+
+function exportResource(resource) {
+    const action = async () => {
+        try {
+            const searchInput = resource === 'books' ? $('#booksSearch') : document.querySelector(`[data-resource-search="${resource}"]`);
+            const rows = await api('/' + resource + '?q=' + encodeURIComponent(searchInput?.value || ''));
+            if (!rows.length) {
+                toast('No records to export', true);
+                return;
+            }
+
+            const headers = Object.keys(rows[0]);
+            const csv = [headers.join(','), ...rows.map(row => headers.map(header => `"${String(row[header] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${resource}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            toast(`${resource} exported successfully`);
+        } catch (e) {
+            toast(e.message, true);
+        }
+    };
+    action();
+}
 
 async function loadDashboard() {
     try {
@@ -57,6 +126,28 @@ async function loadDashboard() {
             </div>
         `).join('');
 
+        const overdueCount = (d.recentLoans || []).filter(r => r.status === 'OVERDUE').length;
+        const returnedCount = (d.recentLoans || []).filter(r => r.status === 'RETURNED').length;
+        const availabilityPercent = d.books ? Math.round((d.availableCopies / d.books) * 100) : 0;
+
+        $('#insightsGrid').innerHTML = `
+            <div class="insight-card">
+                <div class="insight-top"><span>Availability</span><strong>${availabilityPercent}%</strong></div>
+                <div class="progress-bar"><span style="width:${availabilityPercent}%"></span></div>
+                <small>${d.availableCopies} of ${d.books} books ready to borrow</small>
+            </div>
+            <div class="insight-card">
+                <div class="insight-top"><span>Overdue</span><strong>${overdueCount}</strong></div>
+                <div class="progress-bar warn"><span style="width:${Math.min(overdueCount * 30, 100)}%"></span></div>
+                <small>${overdueCount} active overdue items need attention</small>
+            </div>
+            <div class="insight-card">
+                <div class="insight-top"><span>Returns</span><strong>${returnedCount}</strong></div>
+                <div class="progress-bar success"><span style="width:${Math.min(returnedCount * 35, 100)}%"></span></div>
+                <small>${returnedCount} books have been checked back in</small>
+            </div>
+        `;
+
         const today = new Date();
         const summary = [
             { label: 'Available', value: d.availableCopies },
@@ -79,12 +170,34 @@ async function loadDashboard() {
             </div>
         `;
 
-        $('#recentLoans').innerHTML = d.recentLoans.length ? d.recentLoans.map(r => `<tr><td>#${r.loan_id}</td><td>${esc(r.member_name)}</td><td>${esc(r.title)}</td><td>${esc(r.accession_no)}</td><td>${esc(r.due_date)}</td><td>${statusBadge(r.status)}</td></tr>`).join('') : '<tr><td colspan="6" class="empty">No loans found</td></tr>';
+        const filters = [
+            { key: 'ALL', label: 'All' },
+            { key: 'ISSUED', label: 'Issued' },
+            { key: 'OVERDUE', label: 'Overdue' },
+            { key: 'RETURNED', label: 'Returned' }
+        ];
+        $('#dashboardFilters').innerHTML = filters.map(filter => `<button class="filter-btn ${activeDashboardFilter === filter.key ? 'active' : ''}" data-filter="${filter.key}">${filter.label}</button>`).join('');
+        bindDashboardFilters();
+        window.dashboardLoanRows = d.recentLoans || [];
+        renderRecentLoans(window.dashboardLoanRows);
     } catch (e) { toast(e.message, true); }
 }
 function statusBadge(s) { const c = s === 'AVAILABLE' || s === 'RETURNED' || s === 'ACTIVE' || s === 'PAID' ? 'success' : s === 'OVERDUE' || s === 'UNPAID' || s === 'BORROWED' ? 'warn' : 'danger'; return `<span class="badge ${c}">${esc(s)}</span>` }
 
-async function loadBooks() { try { const rows = await api('/books?q=' + encodeURIComponent($('#booksSearch').value)); $('#booksBody').innerHTML = rows.length ? rows.map(r => `<tr><td>${r.book_id}</td><td><strong>${esc(r.title)}</strong><br><small>${esc(r.language)} · Ed. ${r.edition} · ${r.publication_year}</small></td><td>${esc(r.isbn)}</td><td>${esc(r.authors || '—')}</td><td>${esc(r.category_name)}</td><td>${esc(r.publisher_name)}</td><td>${r.available_copies}/${r.total_copies}</td><td class="actions"><button class="small-btn" onclick='editBook(${JSON.stringify(r)})'>Edit</button><button class="small-btn delete" onclick="deleteItem('books',${r.book_id},'book')">Delete</button></td></tr>`).join('') : '<tr><td colspan="8" class="empty">No books found</td></tr>' } catch (e) { toast(e.message, true) } }
+async function loadBooks() {
+    try {
+        const rows = await api('/books?q=' + encodeURIComponent($('#booksSearch').value));
+        const query = $('#booksSearch').value.trim();
+        $('#booksCount').textContent = query ? `${rows.length} result${rows.length === 1 ? '' : 's'}` : `${rows.length} book${rows.length === 1 ? '' : 's'}`;
+        bookRows.clear();
+        rows.forEach(row => bookRows.set(Number(row.book_id), row));
+        $('#booksBody').innerHTML = rows.length ? rows.map(r => `<tr><td>${r.book_id}</td><td><strong>${esc(r.title)}</strong><br><small>${esc(r.language)} · Ed. ${r.edition} · ${r.publication_year}</small></td><td>${esc(r.isbn)}</td><td>${esc(r.authors || '—')}</td><td>${esc(r.category_name)}</td><td>${esc(r.publisher_name)}</td><td>${r.available_copies}/${r.total_copies}</td><td class="actions"><button class="small-btn" onclick="editBookById(${r.book_id})">Edit</button><button class="small-btn delete" onclick="deleteItem('books',${r.book_id},'book')">Delete</button></td></tr>`).join('') : '<tr><td colspan="8" class="empty">No books found</td></tr>';
+    } catch (e) { toast(e.message, true); }
+}
+function editBookById(id) {
+    const row = bookRows.get(Number(id));
+    if (row) openBookModal(row);
+}
 $('#booksSearch').addEventListener('input', () => loadBooks());
 
 async function loadLookups() { lookups = await api('/lookups'); const books = await api('/books'); lookups.books = books.map(b => ({ id: b.book_id, name: b.title })); }
@@ -105,4 +218,7 @@ async function saveBook(e) { e.preventDefault(); const body = { title: $('#f_tit
 async function deleteItem(resource, id, label) { if (!confirm(`Delete this ${label}? This may cascade to related records.`)) return; try { await api(`/${resource}/${id}`, { method: 'DELETE' }); toast('Deleted successfully'); resource === 'books' ? loadBooks() : loadResource(resource) } catch (e) { toast(e.message, true) } }
 async function returnLoan(id) { if (!confirm('Mark this loan as returned?')) return; try { await api('/loans/' + id + '/return', { method: 'POST', body: JSON.stringify({}) }); toast('Book returned'); loadResource('loans'); loadDashboard() } catch (e) { toast(e.message, true) } }
 $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal() });
-(async function init() { try { await api('/health'); await loadLookups(); loadDashboard() } catch (e) { toast('Cannot connect to MySQL/backend: ' + e.message, true) } })();
+(async function init() {
+    initTheme();
+    try { await api('/health'); await loadLookups(); loadDashboard() } catch (e) { toast('Cannot connect to MySQL/backend: ' + e.message, true) }
+})();

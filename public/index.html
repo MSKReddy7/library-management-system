@@ -33,12 +33,19 @@
             <div>
                 <h1 id="pageTitle">Dashboard</h1>
                 <p id="pageSubtitle">Overview of your library</p>
-            </div><button id="refreshBtn" class="secondary">↻ Refresh</button>
+            </div>
+            <div class="topbar-actions">
+                <button id="themeToggle" class="secondary theme-toggle" type="button" aria-label="Toggle dark mode">🌙
+                    Dark</button>
+                <button id="refreshBtn" class="secondary">↻ Refresh</button>
+            </div>
         </header>
 
         <section id="dashboard" class="section active">
             <div id="dashboardHero" class="dashboard-hero"></div>
+            <div id="dashboardFilters" class="dashboard-filters"></div>
             <div id="stats" class="stats"></div>
+            <div id="insightsGrid" class="insights-grid"></div>
             <div class="panel">
                 <div class="panel-head">
                     <h2>Recent Loans</h2><button class="secondary" onclick="showSection('loans')">View all</button>
@@ -64,8 +71,12 @@
         <section id="books" class="section">
             <div class="toolbar">
                 <div class="search"><span>⌕</span><input id="booksSearch"
-                        placeholder="Search title, ISBN, publisher..."></div><button class="primary"
-                    onclick="openBookModal()">+ Add Book</button>
+                        placeholder="Search title, ISBN, publisher..."></div>
+                <span id="booksCount" class="toolbar-count" aria-live="polite"></span>
+                <div class="toolbar-actions">
+                    <button class="secondary" onclick="exportResource('books')">Export CSV</button>
+                    <button class="primary" onclick="openBookModal()">+ Add Book</button>
+                </div>
             </div>
             <div class="panel">
                 <div class="table-wrap">
@@ -91,7 +102,11 @@
         <section id="members" class="section">
             <div class="toolbar">
                 <div class="search"><span>⌕</span><input data-resource-search="members" placeholder="Search members...">
-                </div><button class="primary" onclick="openResourceModal('members')">+ Add Member</button>
+                </div>
+                <div class="toolbar-actions">
+                    <button class="secondary" onclick="exportResource('members')">Export CSV</button>
+                    <button class="primary" onclick="openResourceModal('members')">+ Add Member</button>
+                </div>
             </div>
             <div class="panel">
                 <div class="table-wrap">
@@ -102,7 +117,11 @@
         <section id="authors" class="section">
             <div class="toolbar">
                 <div class="search"><span>⌕</span><input data-resource-search="authors" placeholder="Search authors...">
-                </div><button class="primary" onclick="openResourceModal('authors')">+ Add Author</button>
+                </div>
+                <div class="toolbar-actions">
+                    <button class="secondary" onclick="exportResource('authors')">Export CSV</button>
+                    <button class="primary" onclick="openResourceModal('authors')">+ Add Author</button>
+                </div>
             </div>
             <div class="panel">
                 <div class="table-wrap">
@@ -113,8 +132,11 @@
         <section id="publishers" class="section">
             <div class="toolbar">
                 <div class="search"><span>⌕</span><input data-resource-search="publishers"
-                        placeholder="Search publishers..."></div><button class="primary"
-                    onclick="openResourceModal('publishers')">+ Add Publisher</button>
+                        placeholder="Search publishers..."></div>
+                <div class="toolbar-actions">
+                    <button class="secondary" onclick="exportResource('publishers')">Export CSV</button>
+                    <button class="primary" onclick="openResourceModal('publishers')">+ Add Publisher</button>
+                </div>
             </div>
             <div class="panel">
                 <div class="table-wrap">
@@ -125,8 +147,11 @@
         <section id="categories" class="section">
             <div class="toolbar">
                 <div class="search"><span>⌕</span><input data-resource-search="categories"
-                        placeholder="Search categories..."></div><button class="primary"
-                    onclick="openResourceModal('categories')">+ Add Category</button>
+                        placeholder="Search categories..."></div>
+                <div class="toolbar-actions">
+                    <button class="secondary" onclick="exportResource('categories')">Export CSV</button>
+                    <button class="primary" onclick="openResourceModal('categories')">+ Add Category</button>
+                </div>
             </div>
             <div class="panel">
                 <div class="table-wrap">
@@ -137,7 +162,11 @@
         <section id="copies" class="section">
             <div class="toolbar">
                 <div class="search"><span>⌕</span><input data-resource-search="copies" placeholder="Search copies...">
-                </div><button class="primary" onclick="openResourceModal('copies')">+ Add Copy</button>
+                </div>
+                <div class="toolbar-actions">
+                    <button class="secondary" onclick="exportResource('copies')">Export CSV</button>
+                    <button class="primary" onclick="openResourceModal('copies')">+ Add Copy</button>
+                </div>
             </div>
             <div class="panel">
                 <div class="table-wrap">
@@ -148,7 +177,11 @@
         <section id="loans" class="section">
             <div class="toolbar">
                 <div class="search"><span>⌕</span><input data-resource-search="loans" placeholder="Search loans...">
-                </div><button class="primary" onclick="openResourceModal('loans')">+ Add Loan</button>
+                </div>
+                <div class="toolbar-actions">
+                    <button class="secondary" onclick="exportResource('loans')">Export CSV</button>
+                    <button class="primary" onclick="openResourceModal('loans')">+ Add Loan</button>
+                </div>
             </div>
             <div class="panel">
                 <div class="table-wrap">
@@ -159,7 +192,11 @@
         <section id="fines" class="section">
             <div class="toolbar">
                 <div class="search"><span>⌕</span><input data-resource-search="fines" placeholder="Search fines...">
-                </div><button class="primary" onclick="openResourceModal('fines')">+ Add Fine</button>
+                </div>
+                <div class="toolbar-actions">
+                    <button class="secondary" onclick="exportResource('fines')">Export CSV</button>
+                    <button class="primary" onclick="openResourceModal('fines')">+ Add Fine</button>
+                </div>
             </div>
             <div class="panel">
                 <div class="table-wrap">
