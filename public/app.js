@@ -3,6 +3,13 @@ let lookups = {};
 let currentResource = null;
 let editingId = null;
 const bookRows = new Map();
+const resourceRows = new Map();
+let activeMemberStatus = 'ALL';
+let activeAuthorCountry = '__all__';
+let activePublisherAddress = '__all__';
+let activeCopyStatus = 'ALL';
+let activeLoanStatus = 'ALL';
+let activeFineStatus = 'ALL';
 const resourceConfig = {
     publishers: { title: "Publishers", pk: "publisher_id", fields: [['publisher_name', 'Publisher Name', 'text'], ['email', 'Email', 'email'], ['phone', 'Phone', 'text'], ['address', 'Address', 'text']] },
     categories: { title: "Categories", pk: "category_id", fields: [['category_name', 'Category Name', 'text'], ['description', 'Description', 'textarea']] },
@@ -12,6 +19,7 @@ const resourceConfig = {
     loans: { title: "Loans", pk: "loan_id", fields: [['member_id', 'Member', 'selectLookup', 'members'], ['copy_id', 'Copy', 'selectLookup', 'copies'], ['issue_date', 'Issue Date', 'date'], ['due_date', 'Due Date', 'date'], ['return_date', 'Return Date', 'date'], ['status', 'Status', 'select', ['ISSUED', 'RETURNED', 'OVERDUE']]] },
     fines: { title: "Fines", pk: "fine_id", fields: [['loan_id', 'Loan', 'selectLookup', 'loans'], ['amount', 'Amount', 'number'], ['reason', 'Reason', 'text'], ['fine_date', 'Fine Date', 'date'], ['paid_date', 'Paid Date', 'date'], ['status', 'Status', 'select', ['UNPAID', 'PAID']]] }
 };
+const resourceLabels = { publishers: 'publisher', categories: 'category', authors: 'author', members: 'member', copies: 'book copy', loans: 'loan', fines: 'fine' };
 
 const $ = s => document.querySelector(s);
 const esc = v => String(v ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
@@ -126,15 +134,15 @@ async function loadDashboard() {
             </div>
         `).join('');
 
-        const overdueCount = (d.recentLoans || []).filter(r => r.status === 'OVERDUE').length;
-        const returnedCount = (d.recentLoans || []).filter(r => r.status === 'RETURNED').length;
-        const availabilityPercent = d.books ? Math.round((d.availableCopies / d.books) * 100) : 0;
+        const overdueCount = d.overdueLoans ?? (d.recentLoans || []).filter(r => r.status === 'OVERDUE').length;
+        const returnedCount = d.returnedLoans ?? (d.recentLoans || []).filter(r => r.status === 'RETURNED').length;
+        const availabilityPercent = d.copies ? Math.round((d.availableCopies / d.copies) * 100) : 0;
 
         $('#insightsGrid').innerHTML = `
             <div class="insight-card">
                 <div class="insight-top"><span>Availability</span><strong>${availabilityPercent}%</strong></div>
                 <div class="progress-bar"><span style="width:${availabilityPercent}%"></span></div>
-                <small>${d.availableCopies} of ${d.books} books ready to borrow</small>
+                <small>${d.availableCopies} of ${d.copies} copies ready to borrow</small>
             </div>
             <div class="insight-card">
                 <div class="insight-top"><span>Overdue</span><strong>${overdueCount}</strong></div>
@@ -144,7 +152,7 @@ async function loadDashboard() {
             <div class="insight-card">
                 <div class="insight-top"><span>Returns</span><strong>${returnedCount}</strong></div>
                 <div class="progress-bar success"><span style="width:${Math.min(returnedCount * 35, 100)}%"></span></div>
-                <small>${returnedCount} books have been checked back in</small>
+                <small>${returnedCount} loans have been checked back in</small>
             </div>
         `;
 
@@ -201,15 +209,217 @@ function editBookById(id) {
 $('#booksSearch').addEventListener('input', () => loadBooks());
 
 async function loadLookups() { lookups = await api('/lookups'); const books = await api('/books'); lookups.books = books.map(b => ({ id: b.book_id, name: b.title })); }
-async function loadResource(name) { try { const rows = await api('/' + name + '?q=' + encodeURIComponent(document.querySelector(`[data-resource-search="${name}"]`)?.value || '')); renderResource(name, rows) } catch (e) { toast(e.message, true) } }
-function renderResource(name, rows) { const cfg = resourceConfig[name], table = $('#' + name + 'Table'); const headers = [cfg.pk, ...cfg.fields.map(f => f[0])]; table.innerHTML = `<thead><tr>${headers.map(h => `<th>${h.replaceAll('_', ' ')}</th>`).join('')}<th>Actions</th></tr></thead><tbody>${rows.length ? rows.map(r => `<tr>${headers.map(h => `<td>${h === 'status' ? statusBadge(r[h]) : esc(r[h])}</td>`).join('')}<td class="actions"><button class="small-btn" onclick='editResource(${JSON.stringify(name)},${JSON.stringify(r)})'>Edit</button><button class="small-btn delete" onclick="deleteItem('${name}',${r[cfg.pk]},'${cfg.title.slice(0, -1)}')">Delete</button>${name === 'loans' && r.status !== 'RETURNED' ? `<button class="small-btn" onclick="returnLoan(${r.loan_id})">Return</button>` : ''}</td></tr>`).join('') : `<tr><td colspan="${headers.length + 1}" class="empty">No records found</td></tr>`}</tbody>` }
+async function loadResource(name) {
+    try {
+        const query = document.querySelector(`[data-resource-search="${name}"]`)?.value || '';
+        const rows = await api('/' + name + '?q=' + encodeURIComponent(query));
+        if (name === 'categories') {
+            const noun = rows.length === 1 ? 'category' : 'categories';
+            $('#categoriesCount').textContent = query.trim() ? `${rows.length} result${rows.length === 1 ? '' : 's'}` : `${rows.length} ${noun}`;
+        }
+        if (name === 'members') {
+            const filterButtons = document.querySelectorAll('#memberFilters [data-member-status]');
+            filterButtons.forEach(button => {
+                const status = button.dataset.memberStatus;
+                const count = status === 'ALL' ? rows.length : rows.filter(row => row.status === status).length;
+                button.textContent = `${button.dataset.label} ${count}`;
+            });
+        }
+        if (name === 'copies') {
+            const filterButtons = document.querySelectorAll('#copyFilters [data-copy-status]');
+            filterButtons.forEach(button => {
+                const status = button.dataset.copyStatus;
+                const count = status === 'ALL' ? rows.length : rows.filter(row => row.status === status).length;
+                button.textContent = `${button.dataset.label} ${count}`;
+                const isActive = status === activeCopyStatus;
+                button.classList.toggle('active', isActive);
+                button.setAttribute('aria-pressed', String(isActive));
+            });
+        }
+        if (name === 'loans') {
+            const filterButtons = document.querySelectorAll('#loanFilters [data-loan-status]');
+            filterButtons.forEach(button => {
+                const status = button.dataset.loanStatus;
+                const count = status === 'ALL' ? rows.length : rows.filter(row => row.status === status).length;
+                button.textContent = `${button.dataset.label} ${count}`;
+                const isActive = status === activeLoanStatus;
+                button.classList.toggle('active', isActive);
+                button.setAttribute('aria-pressed', String(isActive));
+            });
+        }
+        if (name === 'fines') {
+            const filterButtons = document.querySelectorAll('#fineFilters [data-fine-status]');
+            filterButtons.forEach(button => {
+                const status = button.dataset.fineStatus;
+                const count = status === 'ALL' ? rows.length : rows.filter(row => row.status === status).length;
+                button.textContent = `${button.dataset.label} ${count}`;
+                const isActive = status === activeFineStatus;
+                button.classList.toggle('active', isActive);
+                button.setAttribute('aria-pressed', String(isActive));
+            });
+            const unpaid = rows.filter(row => row.status === 'UNPAID');
+            const paid = rows.filter(row => row.status === 'PAID');
+            const unpaidTotal = unpaid.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+            const paidTotal = paid.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+            $('#fineSummary').innerHTML = `
+                <div class="fine-metric"><span>Outstanding</span><strong>${formatCurrency(unpaidTotal)}</strong><small>${unpaid.length} unpaid ${unpaid.length === 1 ? 'fine' : 'fines'}</small></div>
+                <div class="fine-metric"><span>Collected</span><strong>${formatCurrency(paidTotal)}</strong><small>${paid.length} paid ${paid.length === 1 ? 'fine' : 'fines'}</small></div>
+                <div class="fine-metric"><span>Total fines</span><strong>${formatCurrency(unpaidTotal + paidTotal)}</strong><small>${rows.length} ${rows.length === 1 ? 'record' : 'records'} in results</small></div>
+            `;
+        }
+        if (name === 'authors') {
+            const countryCounts = new Map();
+            rows.forEach(row => {
+                const country = row.country?.trim() || 'Unspecified';
+                countryCounts.set(country, (countryCounts.get(country) || 0) + 1);
+            });
+            if (activeAuthorCountry !== '__all__' && !countryCounts.has(activeAuthorCountry)) activeAuthorCountry = '__all__';
+            const filters = [{ country: '__all__', label: 'All', count: rows.length }, ...[...countryCounts].sort(([a], [b]) => a.localeCompare(b)).map(([country, count]) => ({ country, label: country, count }))];
+            $('#authorCountryFilters').innerHTML = filters.map(filter => `<button class="filter-btn ${activeAuthorCountry === filter.country ? 'active' : ''}" type="button" data-author-country="${esc(filter.country)}" aria-pressed="${activeAuthorCountry === filter.country}">${esc(filter.label)} ${filter.count}</button>`).join('');
+            document.querySelectorAll('#authorCountryFilters [data-author-country]').forEach(button => {
+                button.addEventListener('click', () => {
+                    activeAuthorCountry = button.dataset.authorCountry;
+                    loadResource('authors');
+                });
+            });
+        }
+        if (name === 'publishers') {
+            const addressCounts = new Map();
+            rows.forEach(row => {
+                const address = row.address?.trim() || 'Unspecified';
+                addressCounts.set(address, (addressCounts.get(address) || 0) + 1);
+            });
+            if (activePublisherAddress !== '__all__' && !addressCounts.has(activePublisherAddress)) activePublisherAddress = '__all__';
+            const filters = [{ address: '__all__', label: 'All', count: rows.length }, ...[...addressCounts].sort(([a], [b]) => a.localeCompare(b)).map(([address, count]) => ({ address, label: address, count }))];
+            $('#publisherAddressFilters').innerHTML = filters.map(filter => `<button class="filter-btn ${activePublisherAddress === filter.address ? 'active' : ''}" type="button" data-publisher-address="${esc(filter.address)}" aria-pressed="${activePublisherAddress === filter.address}">${esc(filter.label)} ${filter.count}</button>`).join('');
+            document.querySelectorAll('#publisherAddressFilters [data-publisher-address]').forEach(button => {
+                button.addEventListener('click', () => {
+                    activePublisherAddress = button.dataset.publisherAddress;
+                    loadResource('publishers');
+                });
+            });
+        }
+        const visibleRows = name === 'members' && activeMemberStatus !== 'ALL'
+            ? rows.filter(row => row.status === activeMemberStatus)
+            : name === 'authors' && activeAuthorCountry !== '__all__'
+                ? rows.filter(row => (row.country?.trim() || 'Unspecified') === activeAuthorCountry)
+                : name === 'publishers' && activePublisherAddress !== '__all__'
+                    ? rows.filter(row => (row.address?.trim() || 'Unspecified') === activePublisherAddress)
+                    : name === 'copies' && activeCopyStatus !== 'ALL'
+                        ? rows.filter(row => row.status === activeCopyStatus)
+                        : name === 'loans' && activeLoanStatus !== 'ALL'
+                            ? rows.filter(row => row.status === activeLoanStatus)
+                            : name === 'fines' && activeFineStatus !== 'ALL'
+                                ? rows.filter(row => row.status === activeFineStatus)
+                                : rows;
+        renderResource(name, visibleRows);
+    } catch (e) { toast(e.message, true); }
+}
+function renderResource(name, rows) {
+    const cfg = resourceConfig[name], table = $('#' + name + 'Table');
+    const headers = [cfg.pk, ...cfg.fields.map(f => f[0])];
+    resourceRows.set(name, new Map(rows.map(row => [Number(row[cfg.pk]), row])));
+    table.innerHTML = `<thead><tr>${headers.map(h => `<th>${name === 'loans' && h === 'member_id' ? 'Member' : name === 'loans' && h === 'copy_id' ? 'Book Copy' : h.replaceAll('_', ' ')}</th>`).join('')}<th>Actions</th></tr></thead><tbody>${rows.length ? rows.map(r => `<tr>${headers.map(h => `<td>${resourceCell(name, r, h)}</td>`).join('')}<td class="actions"><button class="small-btn" onclick="editResourceById('${name}',${r[cfg.pk]})">Edit</button><button class="small-btn delete" onclick="deleteItem('${name}',${r[cfg.pk]},'${resourceLabels[name]}')">Delete</button>${name === 'loans' && r.status !== 'RETURNED' ? `<button class="small-btn" onclick="returnLoan(${r.loan_id})">Return</button>` : ''}</td></tr>`).join('') : `<tr><td colspan="${headers.length + 1}" class="empty">No records found</td></tr>`}</tbody>`;
+}
+function resourceCell(name, row, key) {
+    if (name === 'loans' && key === 'member_id') return `${esc(row.member_name)} (#${row.member_id})`;
+    if (name === 'loans' && key === 'copy_id') return `${esc(row.book_title)} · ${esc(row.accession_no)}`;
+    return key === 'status' ? statusBadge(row[key]) : esc(row[key]);
+}
 for (const input of document.querySelectorAll('[data-resource-search]')) input.addEventListener('input', () => loadResource(input.dataset.resourceSearch));
+for (const button of document.querySelectorAll('#memberFilters [data-member-status]')) {
+    button.addEventListener('click', () => {
+        activeMemberStatus = button.dataset.memberStatus;
+        document.querySelectorAll('#memberFilters [data-member-status]').forEach(filter => {
+            const isActive = filter === button;
+            filter.classList.toggle('active', isActive);
+            filter.setAttribute('aria-pressed', String(isActive));
+        });
+        loadResource('members');
+    });
+}
+for (const button of document.querySelectorAll('#copyFilters [data-copy-status]')) {
+    button.addEventListener('click', () => {
+        activeCopyStatus = button.dataset.copyStatus;
+        loadResource('copies');
+    });
+}
+for (const button of document.querySelectorAll('#loanFilters [data-loan-status]')) {
+    button.addEventListener('click', () => {
+        activeLoanStatus = button.dataset.loanStatus;
+        loadResource('loans');
+    });
+}
+for (const button of document.querySelectorAll('#fineFilters [data-fine-status]')) {
+    button.addEventListener('click', () => {
+        activeFineStatus = button.dataset.fineStatus;
+        loadResource('fines');
+    });
+}
 
-function fieldHtml(field, value = '') { const [key, label, type, extra] = field; let input = ''; if (type === 'select') { input = `<select id="f_${key}" required>${extra.map(v => `<option ${v === value ? 'selected' : ''}>${v}</option>`).join('')}</select>` } else if (type === 'selectLookup') { const opts = lookups[extra] || []; input = `<select id="f_${key}" required><option value="">Select...</option>${opts.map(o => `<option value="${o.id}" ${String(o.id) === String(value) ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` } else if (type === 'textarea') { input = `<textarea id="f_${key}" required>${esc(value)}</textarea>` } else input = `<input id="f_${key}" type="${type}" value="${esc(value)}" ${type === 'number' ? 'step="0.01"' : ''} required>`; return `<div class="field"><label>${label}</label>${input}</div>` }
-function openResourceModal(name, row = null) { currentResource = name; editingId = row ? row[resourceConfig[name].pk] : null; const cfg = resourceConfig[name]; $('#modalTitle').textContent = (row ? 'Edit ' : 'Add ') + cfg.title.slice(0, -1); $('#modalForm').innerHTML = cfg.fields.map(f => fieldHtml(f, row ? row[f[0]] : '')).join('') + `<div class="form-actions"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save</button></div>`; $('#modalForm').onsubmit = saveResource; $('#modal').classList.add('open') }
+function fieldHtml(field, value = '') { const [key, label, type, extra] = field; const required = key === 'paid_date' ? '' : ' required'; let input = ''; if (type === 'select') { input = `<select id="f_${key}"${required}>${extra.map(v => `<option ${v === value ? 'selected' : ''}>${v}</option>`).join('')}</select>` } else if (type === 'selectLookup') { const opts = lookups[extra] || []; input = `<select id="f_${key}"${required}><option value="">Select...</option>${opts.map(o => `<option value="${o.id}" ${String(o.id) === String(value) ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` } else if (type === 'textarea') { input = `<textarea id="f_${key}"${required}>${esc(value)}</textarea>` } else input = `<input id="f_${key}" type="${type}" value="${esc(value)}" ${type === 'number' ? 'step="0.01"' : ''}${required}>`; return `<div class="field"><label>${label}</label>${input}</div>` }
+function openResourceModal(name, row = null) {
+    currentResource = name;
+    editingId = row ? row[resourceConfig[name].pk] : null;
+    const cfg = resourceConfig[name];
+    const fields = name === 'loans' ? cfg.fields.filter(field => !['return_date', 'status'].includes(field[0])) : cfg.fields;
+    const title = name === 'categories' ? 'Category' : name === 'copies' ? 'Book Copy' : resourceLabels[name] || cfg.title.slice(0, -1);
+    $('#modalTitle').textContent = (row ? 'Edit ' : 'Add ') + title.replace(/\b\w/g, letter => letter.toUpperCase());
+    $('#modalForm').innerHTML = fields.map(field => fieldHtml(field, row ? row[field[0]] : '')).join('') + `<div class="form-actions"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save</button></div>`;
+    if (name === 'loans' && row) {
+        for (const key of ['member_id', 'copy_id']) {
+            const select = $('#f_' + key);
+            const value = String(row[key]);
+            if (![...select.options].some(option => option.value === value)) {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = key === 'copy_id' ? `Current loan copy #${value}` : `Current member #${value}`;
+                option.selected = true;
+                select.append(option);
+            }
+        }
+    }
+    if (name === 'fines' && row) {
+        const select = $('#f_loan_id');
+        const value = String(row.loan_id);
+        if (![...select.options].some(option => option.value === value)) {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = `Current fine loan #${value}`;
+            option.selected = true;
+            select.append(option);
+        }
+    }
+    $('#modalForm').onsubmit = saveResource;
+    $('#modal').classList.add('open');
+}
 function editResource(name, row) { openResourceModal(name, row) }
+function editResourceById(name, id) {
+    const row = resourceRows.get(name)?.get(Number(id));
+    if (row) editResource(name, row);
+}
 function closeModal() { $('#modal').classList.remove('open'); editingId = null; currentResource = null }
-async function saveResource(e) { e.preventDefault(); const cfg = resourceConfig[currentResource]; const body = {}; for (const f of cfg.fields) { let v = $('#f_' + f[0]).value; if (f[2] === 'number') v = Number(v); if (v === '') v = null; body[f[0]] = v } try { await api(`/${currentResource}${editingId ? '/' + editingId : ''}`, { method: editingId ? 'PUT' : 'POST', body: JSON.stringify(body) }); closeModal(); toast(editingId ? 'Updated successfully' : 'Added successfully'); loadResource(currentResource) } catch (err) { toast(err.message, true) } }
+async function saveResource(e) {
+    e.preventDefault();
+    const resource = currentResource;
+    const id = editingId;
+    const wasEditing = id !== null;
+    const cfg = resourceConfig[resource];
+    const body = {};
+    const fields = resource === 'loans' ? cfg.fields.filter(field => !['return_date', 'status'].includes(field[0])) : cfg.fields;
+    for (const f of fields) {
+        let value = $('#f_' + f[0]).value;
+        if (f[2] === 'number') value = Number(value);
+        if (value === '') value = null;
+        body[f[0]] = value;
+    }
+    try {
+        await api(`/${resource}${wasEditing ? '/' + id : ''}`, { method: wasEditing ? 'PUT' : 'POST', body: JSON.stringify(body) });
+        closeModal();
+        toast(wasEditing ? 'Updated successfully' : 'Added successfully');
+        loadResource(resource);
+    } catch (err) { toast(err.message, true); }
+}
 
 function openBookModal(row = null) { editingId = row?.book_id || null; currentResource = 'books'; const authors = lookups.authors || []; const selected = (row?.authors || '').split(', ').filter(Boolean); $('#modalTitle').textContent = (row ? 'Edit ' : 'Add ') + 'Book'; $('#modalForm').innerHTML = `${fieldHtml(['title', 'Title', 'text'], row?.title)}${fieldHtml(['isbn', 'ISBN', 'text'], row?.isbn)}${fieldHtml(['publication_year', 'Publication Year', 'number'], row?.publication_year)}${fieldHtml(['edition', 'Edition', 'number'], row?.edition || 1)}${fieldHtml(['language', 'Language', 'text'], row?.language || 'English')}${fieldHtml(['publisher_id', 'Publisher', 'selectLookup', 'publishers'], row?.publisher_id)}${fieldHtml(['category_id', 'Category', 'selectLookup', 'categories'], row?.category_id)}<div class="field full"><label>Authors</label><select id="f_author_ids" class="multi" multiple>${authors.map(a => `<option value="${a.id}" ${selected.includes(a.name) ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select></div><div class="form-actions"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save</button></div>`; $('#modalForm').onsubmit = saveBook; $('#modal').classList.add('open') }
 function editBook(row) { openBookModal(row) }

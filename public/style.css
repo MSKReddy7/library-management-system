@@ -339,12 +339,53 @@ body.theme-dark .toast {
     white-space: nowrap
 }
 
+#categoriesTable td:nth-child(3) {
+    min-width: 260px;
+    max-width: 520px;
+    white-space: normal;
+    line-height: 1.45
+}
+
 .dashboard-filters {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     margin: 0 0 18px;
     padding: 0
+}
+
+.module-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: -2px 0 18px
+}
+
+.fine-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px
+}
+
+.fine-metric {
+    display: grid;
+    gap: 5px;
+    background: linear-gradient(180deg, var(--panel), var(--panel-soft));
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px
+}
+
+.fine-metric span,
+.fine-metric small {
+    color: var(--muted);
+    font-size: 12px
+}
+
+.fine-metric strong {
+    color: var(--text);
+    font-size: 20px
 }
 
 .filter-btn {
@@ -939,6 +980,10 @@ tbody tr:hover {
     }
 
     .summary-badges {
+        grid-template-columns: 1fr
+    }
+
+    .fine-summary {
         grid-template-columns: 1fr
     }
 

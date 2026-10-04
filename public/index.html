@@ -108,6 +108,16 @@
                     <button class="primary" onclick="openResourceModal('members')">+ Add Member</button>
                 </div>
             </div>
+            <div id="memberFilters" class="module-filters" role="group" aria-label="Filter members by status">
+                <button class="filter-btn active" type="button" data-member-status="ALL" data-label="All"
+                    aria-pressed="true">All</button>
+                <button class="filter-btn" type="button" data-member-status="ACTIVE" data-label="Active"
+                    aria-pressed="false">Active</button>
+                <button class="filter-btn" type="button" data-member-status="INACTIVE" data-label="Inactive"
+                    aria-pressed="false">Inactive</button>
+                <button class="filter-btn" type="button" data-member-status="SUSPENDED" data-label="Suspended"
+                    aria-pressed="false">Suspended</button>
+            </div>
             <div class="panel">
                 <div class="table-wrap">
                     <table id="membersTable"></table>
@@ -122,6 +132,8 @@
                     <button class="secondary" onclick="exportResource('authors')">Export CSV</button>
                     <button class="primary" onclick="openResourceModal('authors')">+ Add Author</button>
                 </div>
+            </div>
+            <div id="authorCountryFilters" class="module-filters" role="group" aria-label="Filter authors by country">
             </div>
             <div class="panel">
                 <div class="table-wrap">
@@ -138,6 +150,8 @@
                     <button class="primary" onclick="openResourceModal('publishers')">+ Add Publisher</button>
                 </div>
             </div>
+            <div id="publisherAddressFilters" class="module-filters" role="group"
+                aria-label="Filter publishers by address"></div>
             <div class="panel">
                 <div class="table-wrap">
                     <table id="publishersTable"></table>
@@ -148,6 +162,7 @@
             <div class="toolbar">
                 <div class="search"><span>⌕</span><input data-resource-search="categories"
                         placeholder="Search categories..."></div>
+                <span id="categoriesCount" class="toolbar-count" aria-live="polite"></span>
                 <div class="toolbar-actions">
                     <button class="secondary" onclick="exportResource('categories')">Export CSV</button>
                     <button class="primary" onclick="openResourceModal('categories')">+ Add Category</button>
@@ -168,6 +183,18 @@
                     <button class="primary" onclick="openResourceModal('copies')">+ Add Copy</button>
                 </div>
             </div>
+            <div id="copyFilters" class="module-filters" role="group" aria-label="Filter copies by status">
+                <button class="filter-btn active" type="button" data-copy-status="ALL" data-label="All"
+                    aria-pressed="true">All</button>
+                <button class="filter-btn" type="button" data-copy-status="AVAILABLE" data-label="Available"
+                    aria-pressed="false">Available</button>
+                <button class="filter-btn" type="button" data-copy-status="BORROWED" data-label="Borrowed"
+                    aria-pressed="false">Borrowed</button>
+                <button class="filter-btn" type="button" data-copy-status="LOST" data-label="Lost"
+                    aria-pressed="false">Lost</button>
+                <button class="filter-btn" type="button" data-copy-status="DAMAGED" data-label="Damaged"
+                    aria-pressed="false">Damaged</button>
+            </div>
             <div class="panel">
                 <div class="table-wrap">
                     <table id="copiesTable"></table>
@@ -182,6 +209,16 @@
                     <button class="secondary" onclick="exportResource('loans')">Export CSV</button>
                     <button class="primary" onclick="openResourceModal('loans')">+ Add Loan</button>
                 </div>
+            </div>
+            <div id="loanFilters" class="module-filters" role="group" aria-label="Filter loans by status">
+                <button class="filter-btn active" type="button" data-loan-status="ALL" data-label="All"
+                    aria-pressed="true">All</button>
+                <button class="filter-btn" type="button" data-loan-status="ISSUED" data-label="Issued"
+                    aria-pressed="false">Issued</button>
+                <button class="filter-btn" type="button" data-loan-status="OVERDUE" data-label="Overdue"
+                    aria-pressed="false">Overdue</button>
+                <button class="filter-btn" type="button" data-loan-status="RETURNED" data-label="Returned"
+                    aria-pressed="false">Returned</button>
             </div>
             <div class="panel">
                 <div class="table-wrap">
@@ -198,6 +235,15 @@
                     <button class="primary" onclick="openResourceModal('fines')">+ Add Fine</button>
                 </div>
             </div>
+            <div id="fineFilters" class="module-filters" role="group" aria-label="Filter fines by payment status">
+                <button class="filter-btn active" type="button" data-fine-status="ALL" data-label="All"
+                    aria-pressed="true">All</button>
+                <button class="filter-btn" type="button" data-fine-status="UNPAID" data-label="Unpaid"
+                    aria-pressed="false">Unpaid</button>
+                <button class="filter-btn" type="button" data-fine-status="PAID" data-label="Paid"
+                    aria-pressed="false">Paid</button>
+            </div>
+            <div id="fineSummary" class="fine-summary" aria-live="polite"></div>
             <div class="panel">
                 <div class="table-wrap">
                     <table id="finesTable"></table>
