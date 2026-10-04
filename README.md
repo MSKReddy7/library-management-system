@@ -154,7 +154,3 @@ This application expects the schema previously created for the Library Managemen
 - `MEMBER(member_id, name, email, phone, address, membership_date, status)`
 - `LOAN(loan_id, member_id, copy_id, issue_date, due_date, return_date, status)`
 - `FINE(fine_id, loan_id, amount, reason, fine_date, paid_date, status)`
-
-## Security note
-
-For a college/local project this setup is appropriate. Do not expose MySQL port 3306 or put `.env` in GitHub. In production, add authentication, authorization, validation, rate limiting, CSRF strategy where applicable, audit logging, and HTTPS.
