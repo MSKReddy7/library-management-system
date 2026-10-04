@@ -1,14 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Library Management System</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <aside class="sidebar">
-        <div class="brand"><div class="brand-icon">L</div><div><strong>Library</strong><span>Management System</span></div></div>
+        <div class="brand">
+            <div class="brand-icon">L</div>
+            <div><strong>Library</strong><span>Management System</span></div>
+        </div>
         <nav id="nav">
             <button class="nav-item active" data-section="dashboard">▦ <span>Dashboard</span></button>
             <button class="nav-item" data-section="books">▤ <span>Books</span></button>
@@ -24,23 +29,156 @@
     </aside>
 
     <main class="main">
-        <header class="topbar"><button id="mobileMenu" class="icon-btn">☰</button><div><h1 id="pageTitle">Dashboard</h1><p id="pageSubtitle">Overview of your library</p></div><button id="refreshBtn" class="secondary">↻ Refresh</button></header>
+        <header class="topbar"><button id="mobileMenu" class="icon-btn">☰</button>
+            <div>
+                <h1 id="pageTitle">Dashboard</h1>
+                <p id="pageSubtitle">Overview of your library</p>
+            </div><button id="refreshBtn" class="secondary">↻ Refresh</button>
+        </header>
 
-        <section id="dashboard" class="section active"><div id="stats" class="stats"></div><div class="panel"><div class="panel-head"><h2>Recent Loans</h2><button class="secondary" onclick="showSection('loans')">View all</button></div><div class="table-wrap"><table><thead><tr><th>ID</th><th>Member</th><th>Book</th><th>Copy</th><th>Due</th><th>Status</th></tr></thead><tbody id="recentLoans"></tbody></table></div></div></section>
+        <section id="dashboard" class="section active">
+            <div id="dashboardHero" class="dashboard-hero"></div>
+            <div id="stats" class="stats"></div>
+            <div class="panel">
+                <div class="panel-head">
+                    <h2>Recent Loans</h2><button class="secondary" onclick="showSection('loans')">View all</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Member</th>
+                                <th>Book</th>
+                                <th>Copy</th>
+                                <th>Due</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentLoans"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
 
-        <section id="books" class="section"><div class="toolbar"><div class="search"><span>⌕</span><input id="booksSearch" placeholder="Search title, ISBN, publisher..."></div><button class="primary" onclick="openBookModal()">+ Add Book</button></div><div class="panel"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Title</th><th>ISBN</th><th>Authors</th><th>Category</th><th>Publisher</th><th>Copies</th><th>Actions</th></tr></thead><tbody id="booksBody"></tbody></table></div></div></section>
+        <section id="books" class="section">
+            <div class="toolbar">
+                <div class="search"><span>⌕</span><input id="booksSearch"
+                        placeholder="Search title, ISBN, publisher..."></div><button class="primary"
+                    onclick="openBookModal()">+ Add Book</button>
+            </div>
+            <div class="panel">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>ISBN</th>
+                                <th>Authors</th>
+                                <th>Category</th>
+                                <th>Publisher</th>
+                                <th>Copies</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="booksBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
 
-        <section id="members" class="section"><div class="toolbar"><div class="search"><span>⌕</span><input data-resource-search="members" placeholder="Search members..."></div><button class="primary" onclick="openResourceModal('members')">+ Add Member</button></div><div class="panel"><div class="table-wrap"><table id="membersTable"></table></div></div></section>
-        <section id="authors" class="section"><div class="toolbar"><div class="search"><span>⌕</span><input data-resource-search="authors" placeholder="Search authors..."></div><button class="primary" onclick="openResourceModal('authors')">+ Add Author</button></div><div class="panel"><div class="table-wrap"><table id="authorsTable"></table></div></div></section>
-        <section id="publishers" class="section"><div class="toolbar"><div class="search"><span>⌕</span><input data-resource-search="publishers" placeholder="Search publishers..."></div><button class="primary" onclick="openResourceModal('publishers')">+ Add Publisher</button></div><div class="panel"><div class="table-wrap"><table id="publishersTable"></table></div></div></section>
-        <section id="categories" class="section"><div class="toolbar"><div class="search"><span>⌕</span><input data-resource-search="categories" placeholder="Search categories..."></div><button class="primary" onclick="openResourceModal('categories')">+ Add Category</button></div><div class="panel"><div class="table-wrap"><table id="categoriesTable"></table></div></div></section>
-        <section id="copies" class="section"><div class="toolbar"><div class="search"><span>⌕</span><input data-resource-search="copies" placeholder="Search copies..."></div><button class="primary" onclick="openResourceModal('copies')">+ Add Copy</button></div><div class="panel"><div class="table-wrap"><table id="copiesTable"></table></div></div></section>
-        <section id="loans" class="section"><div class="toolbar"><div class="search"><span>⌕</span><input data-resource-search="loans" placeholder="Search loans..."></div><button class="primary" onclick="openResourceModal('loans')">+ Add Loan</button></div><div class="panel"><div class="table-wrap"><table id="loansTable"></table></div></div></section>
-        <section id="fines" class="section"><div class="toolbar"><div class="search"><span>⌕</span><input data-resource-search="fines" placeholder="Search fines..."></div><button class="primary" onclick="openResourceModal('fines')">+ Add Fine</button></div><div class="panel"><div class="table-wrap"><table id="finesTable"></table></div></div></section>
+        <section id="members" class="section">
+            <div class="toolbar">
+                <div class="search"><span>⌕</span><input data-resource-search="members" placeholder="Search members...">
+                </div><button class="primary" onclick="openResourceModal('members')">+ Add Member</button>
+            </div>
+            <div class="panel">
+                <div class="table-wrap">
+                    <table id="membersTable"></table>
+                </div>
+            </div>
+        </section>
+        <section id="authors" class="section">
+            <div class="toolbar">
+                <div class="search"><span>⌕</span><input data-resource-search="authors" placeholder="Search authors...">
+                </div><button class="primary" onclick="openResourceModal('authors')">+ Add Author</button>
+            </div>
+            <div class="panel">
+                <div class="table-wrap">
+                    <table id="authorsTable"></table>
+                </div>
+            </div>
+        </section>
+        <section id="publishers" class="section">
+            <div class="toolbar">
+                <div class="search"><span>⌕</span><input data-resource-search="publishers"
+                        placeholder="Search publishers..."></div><button class="primary"
+                    onclick="openResourceModal('publishers')">+ Add Publisher</button>
+            </div>
+            <div class="panel">
+                <div class="table-wrap">
+                    <table id="publishersTable"></table>
+                </div>
+            </div>
+        </section>
+        <section id="categories" class="section">
+            <div class="toolbar">
+                <div class="search"><span>⌕</span><input data-resource-search="categories"
+                        placeholder="Search categories..."></div><button class="primary"
+                    onclick="openResourceModal('categories')">+ Add Category</button>
+            </div>
+            <div class="panel">
+                <div class="table-wrap">
+                    <table id="categoriesTable"></table>
+                </div>
+            </div>
+        </section>
+        <section id="copies" class="section">
+            <div class="toolbar">
+                <div class="search"><span>⌕</span><input data-resource-search="copies" placeholder="Search copies...">
+                </div><button class="primary" onclick="openResourceModal('copies')">+ Add Copy</button>
+            </div>
+            <div class="panel">
+                <div class="table-wrap">
+                    <table id="copiesTable"></table>
+                </div>
+            </div>
+        </section>
+        <section id="loans" class="section">
+            <div class="toolbar">
+                <div class="search"><span>⌕</span><input data-resource-search="loans" placeholder="Search loans...">
+                </div><button class="primary" onclick="openResourceModal('loans')">+ Add Loan</button>
+            </div>
+            <div class="panel">
+                <div class="table-wrap">
+                    <table id="loansTable"></table>
+                </div>
+            </div>
+        </section>
+        <section id="fines" class="section">
+            <div class="toolbar">
+                <div class="search"><span>⌕</span><input data-resource-search="fines" placeholder="Search fines...">
+                </div><button class="primary" onclick="openResourceModal('fines')">+ Add Fine</button>
+            </div>
+            <div class="panel">
+                <div class="table-wrap">
+                    <table id="finesTable"></table>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <div id="modal" class="modal"><div class="modal-card"><div class="modal-head"><h2 id="modalTitle">Add</h2><button class="icon-btn" onclick="closeModal()">×</button></div><form id="modalForm"></form></div></div>
+    <div id="modal" class="modal">
+        <div class="modal-card">
+            <div class="modal-head">
+                <h2 id="modalTitle">Add</h2><button class="icon-btn" onclick="closeModal()">×</button>
+            </div>
+            <form id="modalForm"></form>
+        </div>
+    </div>
     <div id="toast" class="toast"></div>
     <script src="app.js"></script>
 </body>
+
 </html>
