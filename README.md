@@ -25,7 +25,7 @@ The browser never receives MySQL credentials. Only the Node.js server connects t
 
 - Node.js 18+ recommended
 - MySQL 8+
-- Your Library Management System database/schema already created
+- MySQL Workbench (recommended for running the included SQL scripts)
 
 ## 1. Put the project in a folder
 
@@ -37,7 +37,21 @@ Open a terminal inside this folder.
 npm install
 ```
 
-## 3. Configure MySQL
+## 3. Create and populate the database
+
+Use the scripts in `WorkBench Files` from MySQL Workbench, in this order:
+
+1. Connect to your MySQL server in Workbench and open `WorkBench Files/schema creation.sql`.
+2. Execute the script. It creates the `library` database and all nine application tables.
+3. Open and execute `WorkBench Files/data.sql` to insert the sample library records.
+
+Run the schema script on a fresh MySQL server/database. It uses `CREATE DATABASE library` without `IF NOT EXISTS`, so do not execute it again over an existing `library` database. Run the data script only once; rerunning it will conflict with the sample records' unique values.
+
+`WorkBench Files/basic queries.sql` contains read-only reporting examples. `WorkBench Files/queries.sql` includes UPDATE and DELETE examples; review and run those statements individually, preferably against a disposable test database, because they modify or remove records.
+
+`library_schema_reference.sql` is a reference note, not the complete schema-creation script. Use `WorkBench Files/schema creation.sql` to create the database and tables.
+
+## 4. Configure MySQL
 
 Copy `.env.example` to `.env` and edit it:
 
@@ -50,9 +64,9 @@ DB_PASSWORD=your_mysql_password
 DB_NAME=library
 ```
 
-`DB_NAME` must be the database containing your nine Library tables.
+Keep `DB_NAME=library` to connect the app to the database created by the Workbench script.
 
-## 4. Start
+## 5. Start
 
 ```bash
 npm start
